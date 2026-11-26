@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+/* Jetons clair/sombre — Dragon Ball DB (contrastes AA vérifiés, aucune couleur en dur dans les composants). */
+@theme {
+  --color-fond: #f6f5f2;
+  --color-carte: #ffffff;
+  --color-texte: #16181d;
+  --color-texte-doux: #4a4f5c;
+  --color-texte-discret: #5b6170;
+  --color-bordure: #e3e2dd;
+  --color-accent: #c84b00;
+  --color-accent-fonce: #9c3800;
+  --color-inverse: #ffffff;
+  --color-accent-doux: #fdeee4;
+  --color-surface: #eeece7;
+  --color-champ: #d6d4cd;
+  --color-separateur: #eceae4;
+  --color-erreur: #b42318;
+  --color-erreur-fond: #fff5f5;
+  --color-erreur-bordure: #f1c4c4;
+  --color-possede: #1e7a3c;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-titre: var(--font-space-grotesk), var(--font-inter), sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="clair"]) {
+    --color-fond: #181a20;
+    --color-carte: #22252d;
+    --color-texte: #eef0f3;
+    --color-texte-doux: #b4b9c4;
+    --color-texte-discret: #9ca2b0;
+    --color-bordure: #343843;
+    --color-accent: #ff944d;
+    --color-accent-fonce: #ffb885;
+    --color-inverse: #181a20;
+    --color-accent-doux: #3c2618;
+    --color-surface: #2b2f38;
+    --color-champ: #454b57;
+    --color-separateur: #2d313b;
+    --color-erreur: #ff8a80;
+    --color-erreur-fond: #3a2124;
+    --color-erreur-bordure: #6a3537;
+    --color-possede: #2f9e55;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="sombre"] {
+  --color-fond: #181a20;
+  --color-carte: #22252d;
+  --color-texte: #eef0f3;
+  --color-texte-doux: #b4b9c4;
+  --color-texte-discret: #9ca2b0;
+  --color-bordure: #343843;
+  --color-accent: #ff944d;
+  --color-accent-fonce: #ffb885;
+  --color-inverse: #181a20;
+  --color-accent-doux: #3c2618;
+  --color-surface: #2b2f38;
+  --color-champ: #454b57;
+  --color-separateur: #2d313b;
+  --color-erreur: #ff8a80;
+  --color-erreur-fond: #3a2124;
+  --color-erreur-bordure: #6a3537;
+  --color-possede: #2f9e55;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-fond);
+  color: var(--color-texte);
+  -webkit-tap-highlight-color: transparent;
+}
