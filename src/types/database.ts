@@ -130,7 +130,7 @@ type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
 
 type DefaultSchema = DatabaseWithoutInternals[Extract<
   keyof Database,
-  "public"
+  "dragonball"
 >];
 
 export type Tables<
