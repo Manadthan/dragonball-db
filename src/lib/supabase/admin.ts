@@ -5,7 +5,8 @@ import { readSecretKey, supabaseEnv } from "./env";
 
 export function createSupabaseAdminClient() {
   const { url } = supabaseEnv();
-  return createClient<Database>(url, readSecretKey(process.env), {
+  return createClient<Database, "dragonball">(url, readSecretKey(process.env), {
+    db: { schema: "dragonball" },
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }

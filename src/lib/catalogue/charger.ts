@@ -5,7 +5,7 @@ import { createSupabasePublicClient } from "@/lib/supabase/public";
 import type { Database } from "@/types/database";
 import type { ObjetCatalogue } from "./types";
 
-type LigneObjet = Database["public"]["Tables"]["objets"]["Row"];
+type LigneObjet = Database["dragonball"]["Tables"]["objets"]["Row"];
 
 /** Jeu de démonstration utilisé uniquement si Supabase n'est pas encore configuré (ex. 1er build Vercel). */
 export const OBJETS_DEPART: ObjetCatalogue[] = [
