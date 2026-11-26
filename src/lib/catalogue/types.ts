@@ -1,8 +1,8 @@
 import type { Database } from "@/types/database";
 
-export type CategorieObjet = Database["public"]["Enums"]["categorie_objet"];
-export type EreDb = Database["public"]["Enums"]["ere_db"];
-export type Marche = Database["public"]["Enums"]["marche"];
+export type CategorieObjet = Database["dragonball"]["Enums"]["categorie_objet"];
+export type EreDb = Database["dragonball"]["Enums"]["ere_db"];
+export type Marche = Database["dragonball"]["Enums"]["marche"];
 
 export const CATEGORIES: readonly {
   valeur: CategorieObjet;

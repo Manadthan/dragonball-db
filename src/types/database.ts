@@ -7,18 +7,18 @@ export type Json =
   | Json[];
 
 export type Database = {
-  public: {
+  dragonball: {
     Tables: {
       objets: {
         Row: {
           annee: number | null;
-          categorie: Database["public"]["Enums"]["categorie_objet"];
+          categorie: Database["dragonball"]["Enums"]["categorie_objet"];
           cree_le: string;
           editeur: string | null;
-          ere: Database["public"]["Enums"]["ere_db"];
+          ere: Database["dragonball"]["Enums"]["ere_db"];
           id: string;
           image_url: string | null;
-          marche: Database["public"]["Enums"]["marche"];
+          marche: Database["dragonball"]["Enums"]["marche"];
           reference: string | null;
           slug: string;
           titre: string;
@@ -28,13 +28,13 @@ export type Database = {
         ComputedFields: never;
         Insert: {
           annee?: number | null;
-          categorie: Database["public"]["Enums"]["categorie_objet"];
+          categorie: Database["dragonball"]["Enums"]["categorie_objet"];
           cree_le?: string;
           editeur?: string | null;
-          ere: Database["public"]["Enums"]["ere_db"];
+          ere: Database["dragonball"]["Enums"]["ere_db"];
           id?: string;
           image_url?: string | null;
-          marche: Database["public"]["Enums"]["marche"];
+          marche: Database["dragonball"]["Enums"]["marche"];
           reference?: string | null;
           slug: string;
           titre: string;
@@ -43,13 +43,13 @@ export type Database = {
         };
         Update: {
           annee?: number | null;
-          categorie?: Database["public"]["Enums"]["categorie_objet"];
+          categorie?: Database["dragonball"]["Enums"]["categorie_objet"];
           cree_le?: string;
           editeur?: string | null;
-          ere?: Database["public"]["Enums"]["ere_db"];
+          ere?: Database["dragonball"]["Enums"]["ere_db"];
           id?: string;
           image_url?: string | null;
-          marche?: Database["public"]["Enums"]["marche"];
+          marche?: Database["dragonball"]["Enums"]["marche"];
           reference?: string | null;
           slug?: string;
           titre?: string;
@@ -89,20 +89,20 @@ export type Database = {
         Row: {
           cree_le: string;
           pseudo: string;
-          role: Database["public"]["Enums"]["role_compte"];
+          role: Database["dragonball"]["Enums"]["role_compte"];
           user_id: string;
         };
         ComputedFields: never;
         Insert: {
           cree_le?: string;
           pseudo: string;
-          role?: Database["public"]["Enums"]["role_compte"];
+          role?: Database["dragonball"]["Enums"]["role_compte"];
           user_id: string;
         };
         Update: {
           cree_le?: string;
           pseudo?: string;
-          role?: Database["public"]["Enums"]["role_compte"];
+          role?: Database["dragonball"]["Enums"]["role_compte"];
           user_id?: string;
         };
         Relationships: [];
@@ -244,7 +244,7 @@ export type CompositeTypes<
     : never;
 
 export const Constants = {
-  public: {
+  dragonball: {
     Enums: {
       categorie_objet: ["manga-livre", "video", "carte", "jeu", "figurine"],
       ere_db: ["dragon-ball", "dbz", "dbgt", "dbs", "daima", "films"],

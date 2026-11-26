@@ -5,7 +5,8 @@ import { supabaseEnv } from "./env";
 
 export function createSupabasePublicClient() {
   const { url, key } = supabaseEnv();
-  return createClient<Database>(url, key, {
+  return createClient<Database, "dragonball">(url, key, {
+    db: { schema: "dragonball" },
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
