@@ -3,45 +3,61 @@ import type { ObjetCatalogue } from "@/lib/catalogue/types";
 import { ensemblePossessions } from "@/lib/collection/collection";
 import { calculerSuivi, verifierJetonSuivi } from "./suivi";
 
+const BASE = {
+  titreOriginal: null,
+  edition: null,
+  numero: null,
+  dateSortie: null,
+  reference: null,
+  details: null,
+  lienOfficiel: null,
+  imagePath: null,
+};
+
 const OBJETS: ObjetCatalogue[] = [
   {
+    ...BASE,
     id: "o1",
-    slug: "tome-1",
-    categorie: "manga-livre",
-    ere: "dragon-ball",
-    marche: "FR",
-    titre: "Dragon Ball — Tome 1",
-    titreOriginal: null,
-    editeur: "Glénat",
-    annee: 1993,
-    reference: "9782723418560",
-    imageUrl: "https://exemple.fr/tome1.webp",
+    slug: "dbz-dvd-jp-01",
+    categorie: "video",
+    ere: "dbz",
+    marche: "JAP",
+    titre: "Dragon Ball Z — DVD #1",
+    editeur: "Pony Canyon",
+    edition: "DVD individuels",
+    numero: 1,
+    annee: 2005,
+    reference: "PCBC-50781",
+    imageUrl: "https://exemple.fr/dvd1-680.webp",
   },
   {
+    ...BASE,
     id: "o2",
-    slug: "tome-2",
-    categorie: "manga-livre",
-    ere: "dragon-ball",
-    marche: "FR",
-    titre: "Dragon Ball — Tome 2",
-    titreOriginal: null,
-    editeur: "Glénat",
-    annee: 1993,
-    reference: null,
+    slug: "dbz-dvd-jp-02",
+    categorie: "video",
+    ere: "dbz",
+    marche: "JAP",
+    titre: "Dragon Ball Z — DVD #2",
+    editeur: "Pony Canyon",
+    edition: "DVD individuels",
+    numero: 2,
+    annee: 2005,
+    reference: "PCBC-50782",
     imageUrl: null,
   },
   {
+    ...BASE,
     id: "o3",
-    slug: "carddass-1",
-    categorie: "carte",
+    slug: "dbz-dragon-box",
+    categorie: "video",
     ere: "dbz",
     marche: "JAP",
-    titre: "Carddass Part 1",
-    titreOriginal: null,
-    editeur: "Bandai",
-    annee: 1988,
-    reference: null,
-    imageUrl: "https://exemple.fr/card1.webp",
+    titre: "Dragon Ball Z — Dragon Box Vol. 1",
+    editeur: "Pony Canyon",
+    edition: "Dragon Box",
+    numero: 1,
+    annee: 2003,
+    imageUrl: "https://exemple.fr/box1.webp",
   },
 ];
 
@@ -57,10 +73,11 @@ describe("verifierJetonSuivi", () => {
 describe("calculerSuivi", () => {
   const possessions = ensemblePossessions([{ objet_id: "o1" }]);
 
-  it("calcule possédés, total, couverture, titre suggéré et retire ?collection=", () => {
+  it("calcule possédés, total, couverture, titre suggéré avec ?edition= et retire ?collection=", () => {
     expect(
       calculerSuivi({
-        search: "?categorie=manga-livre&marche=fr&collection=manquants",
+        search:
+          "?categorie=video&ere=dbz&marche=jap&edition=DVD+individuels&collection=manquants",
         objets: OBJETS,
         possessions,
       }),
@@ -68,9 +85,9 @@ describe("calculerSuivi", () => {
       source: "dragonball-db",
       owned: 1,
       total: 2,
-      coverUrl: "https://exemple.fr/tome1.webp",
-      suggestedTitle: "Mangas & livres · France",
-      url: "https://dragonball-db.vercel.app/?categorie=manga-livre&marche=fr",
+      coverUrl: "https://exemple.fr/dvd1-680.webp",
+      suggestedTitle: "DVD / Blu-ray · DBZ · DVD individuels · Japon",
+      url: "https://dragonball-db.vercel.app/?categorie=video&ere=dbz&marche=jap&edition=DVD+individuels",
     });
   });
 

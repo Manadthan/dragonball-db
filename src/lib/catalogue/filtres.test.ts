@@ -2,15 +2,27 @@ import { describe, expect, it } from "vitest";
 import {
   anneesProposees,
   editeursProposes,
+  editionsProposees,
   filtrerObjets,
   filtresDepuisParametres,
   SANS_FILTRE,
   versParametres,
 } from "./filtres";
-import type { ObjetCatalogue } from "./types";
+import { formaterDateSortie, type ObjetCatalogue } from "./types";
+
+const BASE = {
+  edition: null,
+  numero: null,
+  dateSortie: null,
+  details: null,
+  lienOfficiel: null,
+  imagePath: null,
+  imageUrl: null,
+};
 
 const OBJETS: ObjetCatalogue[] = [
   {
+    ...BASE,
     id: "1",
     slug: "tome-1",
     categorie: "manga-livre",
@@ -21,79 +33,97 @@ const OBJETS: ObjetCatalogue[] = [
     editeur: "Glénat",
     annee: 1993,
     reference: "9782723418560",
-    imageUrl: null,
   },
   {
+    ...BASE,
     id: "2",
-    slug: "carddass-1",
-    categorie: "carte",
-    ere: "dragon-ball",
+    slug: "dbz-dvd-jp-01",
+    categorie: "video",
+    ere: "dbz",
     marche: "JAP",
-    titre: "Carddass Hondan Part 1",
-    titreOriginal: null,
-    editeur: "Bandai",
-    annee: 1988,
-    reference: "DP-01",
-    imageUrl: null,
+    titre: "Dragon Ball Z — DVD #1",
+    titreOriginal: "DRAGON BALL Z #1",
+    editeur: "Pony Canyon",
+    edition: "DVD individuels",
+    numero: 1,
+    annee: 2005,
+    dateSortie: "2005-11-02",
+    reference: "PCBC-50781",
+    details: "Épisodes 1 à 6 · Couverture : Tadayoshi Yamamuro",
   },
   {
+    ...BASE,
     id: "3",
-    slug: "bt3",
-    categorie: "jeu",
+    slug: "dbz-dragon-box",
+    categorie: "video",
     ere: "dbz",
-    marche: "FR",
-    titre: "Budokai Tenkaichi 3",
-    titreOriginal: "Sparking! METEOR",
-    editeur: "Bandai Namco",
-    annee: 2008,
-    reference: null,
-    imageUrl: null,
+    marche: "JAP",
+    titre: "Dragon Ball Z — Dragon Box Vol. 1",
+    titreOriginal: null,
+    editeur: "Pony Canyon",
+    edition: "Dragon Box",
+    numero: 1,
+    annee: 2003,
+    reference: "PCBC-50368",
   },
 ];
 
 describe("filtres URL dragonball-db", () => {
-  it("lit et sérialise les filtres (catégorie, ère, marché, éditeur, année, recherche, collection)", () => {
+  it("lit et sérialise les filtres (y compris ?edition=)", () => {
     const f = filtresDepuisParametres(
-      "?categorie=manga-livre&ere=dragon-ball&marche=fr&editeur=Gl%C3%A9nat&annee=1993&q=tome&collection=possedes",
+      "?categorie=video&ere=dbz&marche=jap&editeur=Pony+Canyon&edition=DVD+individuels&annee=2005&q=yamamuro&collection=possedes",
     );
     expect(f).toEqual({
-      categorie: "manga-livre",
-      ere: "dragon-ball",
-      marche: "FR",
-      editeur: "Glénat",
-      annee: "1993",
-      q: "tome",
+      categorie: "video",
+      ere: "dbz",
+      marche: "JAP",
+      editeur: "Pony Canyon",
+      edition: "DVD individuels",
+      annee: "2005",
+      q: "yamamuro",
       collection: "possedes",
     });
     expect(versParametres(f)).toBe(
-      "?categorie=manga-livre&ere=dragon-ball&marche=fr&editeur=Gl%C3%A9nat&annee=1993&q=tome&collection=possedes",
+      "?categorie=video&ere=dbz&marche=jap&editeur=Pony+Canyon&edition=DVD+individuels&annee=2005&q=yamamuro&collection=possedes",
     );
   });
 
   it("ignore les valeurs inconnues", () => {
     expect(
-      filtresDepuisParametres("?categorie=inconnu&ere=xyz&marche=uk&annee=99&collection=tout"),
+      filtresDepuisParametres(
+        "?categorie=inconnu&ere=xyz&marche=uk&annee=99&collection=tout",
+      ),
     ).toEqual(SANS_FILTRE);
   });
 
-  it("filtre par critères combinés et recherche insensible aux accents", () => {
+  it("isole les DVD individuels du Dragon Box et cherche dans les détails", () => {
     expect(
-      filtrerObjets(OBJETS, { ...SANS_FILTRE, categorie: "manga-livre", marche: "FR" }).map(
+      filtrerObjets(OBJETS, {
+        ...SANS_FILTRE,
+        categorie: "video",
+        edition: "DVD individuels",
+      }).map((o) => o.slug),
+    ).toEqual(["dbz-dvd-jp-01"]);
+
+    expect(
+      filtrerObjets(OBJETS, { ...SANS_FILTRE, q: "yamamuro" }).map(
         (o) => o.slug,
       ),
-    ).toEqual(["tome-1"]);
-    expect(
-      filtrerObjets(OBJETS, { ...SANS_FILTRE, q: "glenat" }).map((o) => o.slug),
-    ).toEqual(["tome-1"]);
-    expect(
-      filtrerObjets(OBJETS, { ...SANS_FILTRE, ere: "dbz", annee: "2008" }).map(
-        (o) => o.slug,
-      ),
-    ).toEqual(["bt3"]);
+    ).toEqual(["dbz-dvd-jp-01"]);
   });
 
-  it("propose éditeurs triés et années décroissantes", () => {
-    expect(editeursProposes(OBJETS)).toEqual(["Bandai", "Bandai Namco", "Glénat"]);
-    expect(anneesProposees(OBJETS)).toEqual(["2008", "1993", "1988"]);
+  it("propose éditeurs, éditions et années triées", () => {
+    expect(editeursProposes(OBJETS)).toEqual(["Glénat", "Pony Canyon"]);
+    expect(editionsProposees(OBJETS)).toEqual([
+      "Dragon Box",
+      "DVD individuels",
+    ]);
+    expect(anneesProposees(OBJETS)).toEqual(["2005", "2003", "1993"]);
+  });
+
+  it("formate les dates de sortie en français", () => {
+    expect(formaterDateSortie("2005-11-02")).toBe("2 novembre 2005");
+    expect(formaterDateSortie("invalide")).toBeNull();
+    expect(formaterDateSortie(null)).toBeNull();
   });
 });

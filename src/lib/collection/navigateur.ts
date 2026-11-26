@@ -1,7 +1,11 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { clientNavigateur, clientSiSession } from "@/lib/supabase/navigateur";
+import {
+  aCookieSession,
+  clientNavigateur,
+  clientSiSession,
+} from "@/lib/supabase/navigateur";
 import { avecObjet, ensemblePossessions } from "./collection";
 
 export type EtatCollection = {
@@ -17,6 +21,7 @@ const INITIAL: EtatCollection = {
 };
 let etat = INITIAL;
 let charge = false;
+let chargementEnCours = false;
 const abonnes = new Set<() => void>();
 
 function changer(patch: Partial<EtatCollection>) {
@@ -25,25 +30,52 @@ function changer(patch: Partial<EtatCollection>) {
 }
 
 async function charger() {
-  const supabase = await clientSiSession();
-  if (!supabase) return changer({ connecte: false });
-  const { data } = await supabase.auth.getSession();
-  if (!data.session) return changer({ connecte: false });
-  const { data: lignes, error } = await supabase
-    .from("possessions")
-    .select("objet_id");
-  if (error) return changer({ connecte: true, erreur: "Collection illisible" });
-  changer({
-    connecte: true,
-    possessions: ensemblePossessions(lignes ?? []),
-  });
+  if (chargementEnCours) return;
+  chargementEnCours = true;
+  try {
+    const supabase = await clientSiSession();
+    if (!supabase) {
+      changer({ connecte: false, possessions: new Set(), erreur: null });
+      return;
+    }
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) {
+      changer({ connecte: false, possessions: new Set(), erreur: null });
+      return;
+    }
+    const { data: lignes, error } = await supabase
+      .from("possessions")
+      .select("objet_id");
+    if (error) {
+      changer({ connecte: true, erreur: "Collection illisible" });
+      return;
+    }
+    changer({
+      connecte: true,
+      possessions: ensemblePossessions(lignes ?? []),
+      erreur: null,
+    });
+  } finally {
+    chargementEnCours = false;
+  }
+}
+
+export function rechargerCollection() {
+  void charger().catch(() =>
+    changer({ connecte: false, possessions: new Set(), erreur: null }),
+  );
 }
 
 function abonner(rappel: () => void) {
   abonnes.add(rappel);
-  if (!charge) {
+  const cookiePresent = aCookieSession();
+  const desynchronise =
+    charge &&
+    ((cookiePresent && etat.connecte === false) ||
+      (!cookiePresent && etat.connecte === true));
+  if (!charge || desynchronise) {
     charge = true;
-    void charger().catch(() => changer({ connecte: false }));
+    rechargerCollection();
   }
   return () => abonnes.delete(rappel);
 }

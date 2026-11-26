@@ -16,8 +16,14 @@ const objet = (id: string): ObjetCatalogue => ({
   titre: id,
   titreOriginal: null,
   editeur: "Glénat",
+  edition: null,
+  numero: null,
   annee: 1993,
+  dateSortie: null,
   reference: null,
+  details: null,
+  lienOfficiel: null,
+  imagePath: null,
   imageUrl: null,
 });
 
@@ -35,8 +41,12 @@ describe("collection dragonball-db", () => {
     expect(possedeObjet(sans, "o1")).toBe(false);
 
     const objets = [objet("o1"), objet("o2")];
-    expect(filtrerCollection(objets, "possedes", initial).map((o) => o.id)).toEqual(["o1"]);
-    expect(filtrerCollection(objets, "manquants", initial).map((o) => o.id)).toEqual(["o2"]);
+    expect(
+      filtrerCollection(objets, "possedes", initial).map((o) => o.id),
+    ).toEqual(["o1"]);
+    expect(
+      filtrerCollection(objets, "manquants", initial).map((o) => o.id),
+    ).toEqual(["o2"]);
     expect(filtrerCollection(objets, null, initial)).toHaveLength(2);
   });
 });

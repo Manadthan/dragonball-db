@@ -1,0 +1,48 @@
+name: Import des jaquettes Pony Canyon
+
+# Télécharge les jaquettes officielles HD (size=6, ~680×1000 px) depuis Pony Canyon,
+# les convertit en WebP (300w + 680w) dans le bucket public `dragonball-visuels`,
+# et met à jour `dragonball.objets.image_path` (idempotent : ne traite que les manquantes par défaut).
+on:
+  workflow_run:
+    workflows: ["Déploiement du schéma"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      forcer:
+        description: "Remplacer aussi les jaquettes déjà présentes"
+        type: boolean
+        default: false
+
+concurrency:
+  group: import-jaquettes-pony-canyon
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  import-jaquettes:
+    name: Publier les jaquettes WebP dans dragonball-visuels
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Importer les jaquettes HD manquantes
+        run: |
+          if [ "${{ inputs.forcer }}" = "true" ]; then
+            node scripts/jaquettes-dbz-dvd.mjs --ecrire --forcer
+          else
+            node scripts/jaquettes-dbz-dvd.mjs --ecrire
+          fi

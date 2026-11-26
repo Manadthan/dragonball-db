@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { JaquetteObjet } from "@/components/JaquetteObjet";
 import {
   anneesProposees,
   editeursProposes,
+  editionsProposees,
   filtrerObjets,
   filtresDepuisParametres,
   SANS_FILTRE,
@@ -14,9 +16,7 @@ import {
 import {
   CATEGORIES,
   ERES,
-  libelleCategorie,
   libelleEre,
-  libelleMarche,
   MARCHES,
   type ObjetCatalogue,
 } from "@/lib/catalogue/types";
@@ -49,6 +49,7 @@ export function Catalogue({ objets }: { objets: ObjetCatalogue[] }) {
   }
 
   const editeurs = useMemo(() => editeursProposes(objets), [objets]);
+  const editions = useMemo(() => editionsProposees(objets), [objets]);
   const annees = useMemo(() => anneesProposees(objets), [objets]);
 
   const affiches = useMemo(() => {
@@ -63,6 +64,7 @@ export function Catalogue({ objets }: { objets: ObjetCatalogue[] }) {
     filtres.ere !== null ||
     filtres.marche !== null ||
     filtres.editeur !== null ||
+    filtres.edition !== null ||
     filtres.annee !== null ||
     filtres.q !== "" ||
     (connecte && filtres.collection !== null);
@@ -70,7 +72,11 @@ export function Catalogue({ objets }: { objets: ObjetCatalogue[] }) {
   return (
     <div className="flex flex-col gap-4">
       {/* 5 catégories natives en pilules défilables */}
-      <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Catégories">
+      <div
+        className="flex gap-2 overflow-x-auto pb-1"
+        role="group"
+        aria-label="Catégories"
+      >
         <button
           type="button"
           onClick={() => appliquer({ categorie: null })}
@@ -109,13 +115,13 @@ export function Catalogue({ objets }: { objets: ObjetCatalogue[] }) {
         type="search"
         value={filtres.q}
         onChange={(e) => appliquer({ q: e.currentTarget.value })}
-        placeholder="Rechercher un manga, une carte, un jeu…"
+        placeholder="Rechercher un DVD, une référence (PCBC…), un manga…"
         aria-label="Rechercher dans le catalogue"
         className="h-11 w-full rounded-xl border border-champ bg-carte px-3.5 text-sm text-texte outline-none focus:border-accent"
       />
 
-      {/* Filtres URL : ère, marché, éditeur, année (+ collection si connecté) */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {/* Filtres URL : ère, marché, éditeur, édition, année (+ collection si connecté) */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
         <select
           aria-label="Série ou ère"
           value={filtres.ere ?? ""}
@@ -169,6 +175,24 @@ export function Catalogue({ objets }: { objets: ObjetCatalogue[] }) {
           ))}
         </select>
 
+        {editions.length > 0 && (
+          <select
+            aria-label="Édition"
+            value={filtres.edition ?? ""}
+            onChange={(e) =>
+              appliquer({ edition: e.currentTarget.value || null })
+            }
+            className="h-10 rounded-lg border border-champ bg-carte px-2.5 text-xs font-medium text-texte"
+          >
+            <option value="">Toutes les éditions</option>
+            {editions.map((ed) => (
+              <option key={ed} value={ed}>
+                {ed}
+              </option>
+            ))}
+          </select>
+        )}
+
         <select
           aria-label="Année"
           value={filtres.annee ?? ""}
@@ -219,13 +243,13 @@ export function Catalogue({ objets }: { objets: ObjetCatalogue[] }) {
         )}
       </div>
 
-      {/* Liste / grille d'objets */}
+      {/* Grille mobile-first (2 colonnes sur iPhone 12 mini) */}
       {affiches.length === 0 ? (
         <p className="rounded-xl border border-bordure bg-carte p-6 text-center text-sm text-texte-doux">
           Aucun objet ne correspond à ces filtres.
         </p>
       ) : (
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
           {affiches.map((objet) => {
             const possede =
               connecte && possedeObjet(collection.possessions, objet.id);
@@ -233,36 +257,32 @@ export function Catalogue({ objets }: { objets: ObjetCatalogue[] }) {
               <li key={objet.id}>
                 <Link
                   href={`/objets/${objet.slug}`}
-                  className="flex h-full flex-col gap-2 rounded-xl border border-bordure bg-carte p-3.5 hover:border-accent"
+                  className="flex h-full flex-col gap-2 rounded-xl border border-bordure bg-carte p-2.5 hover:border-accent"
                 >
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="rounded-md bg-accent-doux px-2 py-0.5 text-[11px] font-semibold text-accent-fonce">
-                      {libelleCategorie(objet.categorie)}
-                    </span>
-                    <span className="rounded-md bg-surface px-2 py-0.5 text-[11px] font-semibold text-texte-doux">
-                      {libelleEre(objet.ere)}
-                    </span>
-                    <span className="rounded-md bg-surface px-2 py-0.5 text-[11px] font-semibold text-texte-doux">
-                      {objet.marche}
-                    </span>
+                  <div className="relative">
+                    <JaquetteObjet
+                      objet={objet}
+                      sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 230px"
+                    />
                     {possede && (
-                      <span className="rounded-md bg-possede px-2 py-0.5 text-[11px] font-bold text-inverse">
+                      <span className="absolute top-1.5 right-1.5 rounded-md bg-possede px-1.5 py-0.5 text-[10px] font-bold text-inverse shadow-sm">
                         ✓ Je l&apos;ai
                       </span>
                     )}
                   </div>
-                  <h2 className="font-titre text-base leading-snug font-bold">
+                  <div className="flex flex-wrap items-center gap-1">
+                    <span className="rounded bg-surface px-1.5 py-0.5 text-[10px] font-semibold text-texte-doux">
+                      {libelleEre(objet.ere)}
+                    </span>
+                    <span className="rounded bg-surface px-1.5 py-0.5 text-[10px] font-semibold text-texte-doux">
+                      {objet.marche}
+                    </span>
+                  </div>
+                  <h2 className="font-titre text-sm leading-snug font-bold">
                     {objet.titre}
                   </h2>
-                  {objet.titreOriginal && (
-                    <p lang="ja" className="text-xs text-texte-discret">
-                      {objet.titreOriginal}
-                    </p>
-                  )}
-                  <p className="mt-auto text-xs text-texte-doux">
-                    {[objet.editeur, objet.annee, libelleMarche(objet.marche)]
-                      .filter(Boolean)
-                      .join(" · ")}
+                  <p className="mt-auto text-[11px] text-texte-discret">
+                    {[objet.reference, objet.annee].filter(Boolean).join(" · ")}
                   </p>
                 </Link>
               </li>
