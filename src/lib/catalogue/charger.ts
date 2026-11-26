@@ -109,6 +109,8 @@ export const OBJETS_DEPART: ObjetCatalogue[] = [
 ];
 
 function versObjet(l: LigneObjet): ObjetCatalogue {
+  const imagePath = l.image_path ?? null;
+  const imageUrl = l.image_url ?? null;
   return {
     id: l.id,
     slug: l.slug,
@@ -116,39 +118,51 @@ function versObjet(l: LigneObjet): ObjetCatalogue {
     ere: l.ere,
     marche: l.marche,
     titre: l.titre,
-    titreOriginal: l.titre_original,
-    editeur: l.editeur,
-    edition: l.edition,
-    numero: l.numero,
-    annee: l.annee,
-    dateSortie: l.date_sortie,
-    reference: l.reference,
-    details: l.details,
-    lienOfficiel: l.lien_officiel,
-    imagePath: l.image_path,
-    imageUrl: resoudreImageObjet({
-      imagePath: l.image_path,
-      imageUrl: l.image_url,
-    }),
+    titreOriginal: l.titre_original ?? null,
+    editeur: l.editeur ?? null,
+    edition: l.edition ?? null,
+    numero: l.numero ?? null,
+    annee: l.annee ?? null,
+    dateSortie: l.date_sortie ?? null,
+    reference: l.reference ?? null,
+    details: l.details ?? null,
+    lienOfficiel: l.lien_officiel ?? null,
+    imagePath,
+    imageUrl: resoudreImageObjet({ imagePath, imageUrl }),
   };
+}
+
+function trierCatalogue(a: ObjetCatalogue, b: ObjetCatalogue): number {
+  const anA = a.annee ?? Number.MAX_SAFE_INTEGER;
+  const anB = b.annee ?? Number.MAX_SAFE_INTEGER;
+  if (anA !== anB) return anA - anB;
+
+  const numA = a.numero ?? Number.MAX_SAFE_INTEGER;
+  const numB = b.numero ?? Number.MAX_SAFE_INTEGER;
+  if (numA !== numB) return numA - numB;
+
+  const parTitre = a.titre.localeCompare(b.titre, "fr");
+  if (parTitre !== 0) return parTitre;
+  return a.id.localeCompare(b.id);
 }
 
 export async function chargerCatalogue(): Promise<ObjetCatalogue[]> {
   if (!supabaseEnvOptionnel()) return OBJETS_DEPART;
   const supabase = createSupabasePublicClient();
+  // Tri SQL sur colonnes du socle 0001 + tri naturel sur `numero` côté TS :
+  // permet aux aperçus Vercel de builder avant l'application de la migration 0003 en prod.
   const lignes = await toutesLesPages<LigneObjet>(
     (de, a) =>
       supabase
         .from("objets")
         .select("*")
         .order("annee", { ascending: true, nullsFirst: false })
-        .order("numero", { ascending: true, nullsFirst: false })
         .order("titre")
         .order("id")
         .range(de, a),
     "Catalogue Dragon Ball",
   );
-  return lignes.map(versObjet);
+  return lignes.map(versObjet).sort(trierCatalogue);
 }
 
 export async function chargerObjetParSlug(
