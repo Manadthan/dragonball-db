@@ -1,5 +1,6 @@
-// Import des jaquettes officielles HD Pony Canyon (size=6, ~680×1000 px) pour les 49 DVD Dragon Ball Z
-// (PCBC-50781 à PCBC-50829) + le Dragon Box Vol. 1 (PCBC-50368) vers le bucket public `dragonball-visuels`.
+// Import des jaquettes officielles pour les DVD japonais individuels Dragon Ball (26), Dragon Ball Z (49),
+// Dragon Ball GT (11) (Pony Canyon HD size=6, ~680×1000 px), Dragon Box, et Dragon Ball The Movies (17, Toei Video)
+// vers le bucket public `dragonball-visuels`.
 //
 // Usages :
 //   node scripts/jaquettes-dbz-dvd.mjs --planche /dossier   (lecture seule : télécharge + planche contact)
@@ -17,17 +18,64 @@ import sharp from "sharp";
 const BUCKET = "dragonball-visuels";
 const TAILLES = [300, 680];
 const FORMAT_PCBC = /^PCBC-(\d{5})$/i;
+const FORMAT_DSTD_MOVIE = /^DSTD-0(78(?:5[1-9]|6[0-7]))$/i;
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Jaquettes DVD individuels Dragon Ball The Movies (#01 à #17, Toei Video) : Book-Off LL (300×450) + Kanzenshuu (#13).
+const MOVIES_BOOKOFF = {
+  "DSTD-07851": "0015867048",
+  "DSTD-07852": "0015867049",
+  "DSTD-07853": "0015894726",
+  "DSTD-07854": "0015894727",
+  "DSTD-07855": "0015894704",
+  "DSTD-07856": "0015894705",
+  "DSTD-07857": "0015951978",
+  "DSTD-07858": "0015951979",
+  "DSTD-07859": "0016005224",
+  "DSTD-07860": "0016005253",
+  "DSTD-07861": "0016005453",
+  "DSTD-07862": "0016005452",
+  "DSTD-07864": "0016037732",
+  "DSTD-07865": "0016061225",
+  "DSTD-07866": "0016061226",
+  "DSTD-07867": "0016061227",
+};
 
 const option = (nom) => {
   const i = process.argv.indexOf(nom);
   return i > 0 ? process.argv[i + 1] : null;
 };
 
-function urlPonyCanyon(reference) {
-  const m = FORMAT_PCBC.exec((reference ?? "").trim());
-  if (!m) return null;
-  return `https://www.ponycanyon.co.jp/images/wcms/accessor/bin/jacket/PCBC0000${m[1]}.jpg?size=6&order=1`;
+function urlsJaquetteDvd(reference) {
+  const ref = (reference ?? "").trim().toUpperCase();
+  const mPc = FORMAT_PCBC.exec(ref);
+  if (mPc) {
+    return {
+      minWidth: 500,
+      minHeight: 700,
+      urls: [
+        `https://www.ponycanyon.co.jp/images/wcms/accessor/bin/jacket/PCBC0000${mPc[1]}.jpg?size=6&order=1`,
+      ],
+    };
+  }
+  const mMovie = FORMAT_DSTD_MOVIE.exec(ref);
+  if (mMovie) {
+    const num = Number(mMovie[1]) - 7850;
+    const numPad = String(num).padStart(2, "0");
+    const boId = MOVIES_BOOKOFF[ref];
+    const urls = [];
+    if (boId) {
+      urls.push(
+        `https://content.bookoff.co.jp/goodsimages/LL/${boId.slice(0, 6)}/${boId}LL.jpg`,
+      );
+    }
+    urls.push(
+      `https://www.kanzenshuu.com/guides/home-video/jp/movies/${numPad}_large.jpg`,
+      `https://www.toei-video.co.jp/images/jackets/DSTD0${mMovie[1]}.jpg`,
+    );
+    return { minWidth: 160, minHeight: 240, urls };
+  }
+  return null;
 }
 
 async function resoudreConfigSupabase() {
@@ -72,20 +120,31 @@ async function resoudreConfigSupabase() {
 }
 
 async function telechargerHd(reference) {
-  const url = urlPonyCanyon(reference);
-  if (!url) throw new Error(`Référence Pony Canyon invalide : ${reference}`);
-  const res = await fetch(url, {
-    headers: { "User-Agent": "dragonball-db-import/1.0" },
-  });
-  if (!res.ok) throw new Error(`${reference} HTTP ${res.status} (${url})`);
-  const octets = Buffer.from(await res.arrayBuffer());
-  const meta = await sharp(octets).metadata();
-  if (!meta.width || !meta.height || meta.width < 500 || meta.height < 700) {
-    throw new Error(
-      `${reference} dimensions insuffisantes : ${meta.width}×${meta.height}`,
-    );
+  const spec = urlsJaquetteDvd(reference);
+  if (!spec) throw new Error(`Référence DVD non reconnue : ${reference}`);
+  let dernierErreur = "aucune source";
+  for (const url of spec.urls) {
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; dragonball-db/1.0)" },
+    }).catch((e) => ({ ok: false, status: e.message }));
+    if (!res.ok) {
+      dernierErreur = `HTTP ${res.status} (${url})`;
+      continue;
+    }
+    const octets = Buffer.from(await res.arrayBuffer());
+    const meta = await sharp(octets).metadata().catch(() => null);
+    if (
+      !meta?.width ||
+      !meta?.height ||
+      meta.width < spec.minWidth ||
+      meta.height < spec.minHeight
+    ) {
+      dernierErreur = `dimensions insuffisantes ${meta?.width}×${meta?.height} (${url})`;
+      continue;
+    }
+    return { octets, width: meta.width, height: meta.height };
   }
-  return { octets, width: meta.width, height: meta.height };
+  throw new Error(`${reference} : ${dernierErreur}`);
 }
 
 async function genererPlanche(dossier) {
@@ -163,17 +222,17 @@ async function ecrireEnBase(forcer) {
   const { data: objets, error } = await supabase
     .from("objets")
     .select("id, slug, reference, image_path")
-    .eq("editeur", "Pony Canyon")
+    .in("editeur", ["Pony Canyon", "Toei Video"])
     .not("reference", "is", null)
     .order("numero", { ascending: true, nullsFirst: false })
     .order("slug");
   if (error) throw new Error(`Lecture objets impossible : ${error.message}`);
 
   const cibles = (objets ?? []).filter(
-    (o) => urlPonyCanyon(o.reference) && (forcer || !o.image_path),
+    (o) => urlsJaquetteDvd(o.reference) && (forcer || !o.image_path),
   );
   console.log(
-    `${cibles.length} jaquette(s) à importer sur ${(objets ?? []).length} objet(s) Pony Canyon.`,
+    `${cibles.length} jaquette(s) à importer sur ${(objets ?? []).length} DVD japonais.`,
   );
 
   const version = `v${Date.now().toString(36).slice(-5)}`;
