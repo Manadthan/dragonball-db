@@ -1,12 +1,12 @@
 -- Tests pgTAP du socle Dragon Ball DB (schéma dédié `dragonball`) : tables, droits, RLS et possessions privées.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(17);
+select plan(18);
 
 select has_table('dragonball', 'objets', 'table dragonball.objets');
 select has_table('dragonball', 'profils', 'table dragonball.profils');
 select has_table('dragonball', 'possessions', 'table dragonball.possessions');
-select is((select count(*)::int from dragonball.objets), 312, '312 objets (5 de départ + 103 DVD individuels + 204 livres Glénat)');
+select is((select count(*)::int from dragonball.objets), 541, '541 objets (5 de départ + 103 DVD individuels + 204 livres Glénat + 229 Jump Comics Japon)');
 select is(
   (select count(*)::int from dragonball.objets where edition = 'DVD individuels' and editeur = 'Pony Canyon'),
   86,
@@ -21,6 +21,11 @@ select is(
   (select count(*)::int from dragonball.objets where categorie = 'manga-livre' and editeur = 'Glénat'),
   205,
   '205 livres Dragon Ball publiés par Glénat en France'
+);
+select is(
+  (select count(*)::int from dragonball.objets where categorie = 'manga-livre' and editeur = 'Shueisha (Jump Comics)' and marche = 'JAP'),
+  229,
+  '229 livres Dragon Ball publiés sous le label Jump Comics au Japon'
 );
 select is(
   (select public from storage.buckets where id = 'dragonball-visuels'),
@@ -74,7 +79,7 @@ select throws_ok(
 -- Un visiteur voit le catalogue public mais ne peut pas lire les possessions.
 set local role anon;
 set local request.jwt.claims = '{"role": "anon"}';
-select is((select count(*)::int from dragonball.objets), 313, 'un visiteur lit le catalogue public');
+select is((select count(*)::int from dragonball.objets), 542, 'un visiteur lit le catalogue public');
 select throws_ok(
   $$select * from dragonball.possessions$$,
   '42501', null, 'un visiteur n''a aucun accès à dragonball.possessions'
