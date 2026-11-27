@@ -69,7 +69,7 @@ const OBJETS: ObjetCatalogue[] = [
 ];
 
 describe("filtres URL dragonball-db", () => {
-  it("lit et sérialise les filtres (y compris ?edition=)", () => {
+  it("lit et sérialise les filtres (y compris ?edition= et ?tri=)", () => {
     const f = filtresDepuisParametres(
       "?categorie=video&ere=dbz&marche=jap&editeur=Pony+Canyon&edition=DVD+individuels&annee=2005&q=yamamuro&collection=possedes",
     );
@@ -82,16 +82,21 @@ describe("filtres URL dragonball-db", () => {
       annee: "2005",
       q: "yamamuro",
       collection: "possedes",
+      tri: "anciens",
     });
     expect(versParametres(f)).toBe(
       "?categorie=video&ere=dbz&marche=jap&editeur=Pony+Canyon&edition=DVD+individuels&annee=2005&q=yamamuro&collection=possedes",
     );
+
+    const fTrie = filtresDepuisParametres("?categorie=video&tri=recents");
+    expect(fTrie.tri).toBe("recents");
+    expect(versParametres(fTrie)).toBe("?categorie=video&tri=recents");
   });
 
   it("ignore les valeurs inconnues", () => {
     expect(
       filtresDepuisParametres(
-        "?categorie=inconnu&ere=xyz&marche=uk&annee=99&collection=tout",
+        "?categorie=inconnu&ere=xyz&marche=uk&annee=99&collection=tout&tri=aleatoire",
       ),
     ).toEqual(SANS_FILTRE);
   });
