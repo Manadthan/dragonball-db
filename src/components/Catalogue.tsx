@@ -28,16 +28,20 @@ function lireFiltresNavigateur(): FiltresCatalogue {
   return filtresDepuisParametres(window.location.search);
 }
 
+const TAILLE_LOT = 48;
+
 export function Catalogue({ objets }: { objets: ObjetCatalogue[] }) {
   const [filtres, setFiltres] = useState<FiltresCatalogue>(() =>
     lireFiltresNavigateur(),
   );
+  const [limite, setLimite] = useState(TAILLE_LOT);
   const collection = useCollection();
   const connecte = collection.connecte === true;
 
   function appliquer(patch: Partial<FiltresCatalogue>) {
     const suivants: FiltresCatalogue = { ...filtres, ...patch };
     setFiltres(suivants);
+    setLimite(TAILLE_LOT);
     if (typeof window !== "undefined") {
       const qs = versParametres(suivants);
       window.history.replaceState(
@@ -54,10 +58,19 @@ export function Catalogue({ objets }: { objets: ObjetCatalogue[] }) {
 
   const affiches = useMemo(() => {
     const base = filtrerObjets(objets, filtres);
-    return connecte
+    const liste = connecte
       ? filtrerCollection(base, filtres.collection, collection.possessions)
       : base;
+    if (!filtres.edition) return liste;
+    return [...liste].sort(
+      (a, b) =>
+        (a.numero ?? Number.MAX_SAFE_INTEGER) -
+          (b.numero ?? Number.MAX_SAFE_INTEGER) ||
+        a.titre.localeCompare(b.titre, "fr"),
+    );
   }, [objets, filtres, connecte, collection.possessions]);
+
+  const visibles = useMemo(() => affiches.slice(0, limite), [affiches, limite]);
 
   const aFiltresActifs =
     filtres.categorie !== null ||
@@ -115,7 +128,7 @@ export function Catalogue({ objets }: { objets: ObjetCatalogue[] }) {
         type="search"
         value={filtres.q}
         onChange={(e) => appliquer({ q: e.currentTarget.value })}
-        placeholder="Rechercher un DVD, une référence (PCBC…), un manga…"
+        placeholder="Rechercher un manga, un DVD, un ISBN ou une réf. (PCBC, DSTD…)"
         aria-label="Rechercher dans le catalogue"
         className="h-11 w-full rounded-xl border border-champ bg-carte px-3.5 text-sm text-texte outline-none focus:border-accent"
       />
@@ -249,46 +262,60 @@ export function Catalogue({ objets }: { objets: ObjetCatalogue[] }) {
           Aucun objet ne correspond à ces filtres.
         </p>
       ) : (
-        <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
-          {affiches.map((objet) => {
-            const possede =
-              connecte && possedeObjet(collection.possessions, objet.id);
-            return (
-              <li key={objet.id}>
-                <Link
-                  href={`/objets/${objet.slug}`}
-                  className="flex h-full flex-col gap-2 rounded-xl border border-bordure bg-carte p-2.5 hover:border-accent"
-                >
-                  <div className="relative">
-                    <JaquetteObjet
-                      objet={objet}
-                      sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 230px"
-                    />
-                    {possede && (
-                      <span className="absolute top-1.5 right-1.5 rounded-md bg-possede px-1.5 py-0.5 text-[10px] font-bold text-inverse shadow-sm">
-                        ✓ Je l&apos;ai
+        <>
+          <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+            {visibles.map((objet) => {
+              const possede =
+                connecte && possedeObjet(collection.possessions, objet.id);
+              return (
+                <li key={objet.id}>
+                  <Link
+                    href={`/objets/${objet.slug}`}
+                    className="flex h-full flex-col gap-2 rounded-xl border border-bordure bg-carte p-2.5 hover:border-accent"
+                  >
+                    <div className="relative">
+                      <JaquetteObjet
+                        objet={objet}
+                        sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 230px"
+                      />
+                      {possede && (
+                        <span className="absolute top-1.5 right-1.5 rounded-md bg-possede px-1.5 py-0.5 text-[10px] font-bold text-inverse shadow-sm">
+                          ✓ Je l&apos;ai
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <span className="rounded bg-surface px-1.5 py-0.5 text-[10px] font-semibold text-texte-doux">
+                        {libelleEre(objet.ere)}
                       </span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1">
-                    <span className="rounded bg-surface px-1.5 py-0.5 text-[10px] font-semibold text-texte-doux">
-                      {libelleEre(objet.ere)}
-                    </span>
-                    <span className="rounded bg-surface px-1.5 py-0.5 text-[10px] font-semibold text-texte-doux">
-                      {objet.marche}
-                    </span>
-                  </div>
-                  <h2 className="font-titre text-sm leading-snug font-bold">
-                    {objet.titre}
-                  </h2>
-                  <p className="mt-auto text-[11px] text-texte-discret">
-                    {[objet.reference, objet.annee].filter(Boolean).join(" · ")}
-                  </p>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+                      <span className="rounded bg-surface px-1.5 py-0.5 text-[10px] font-semibold text-texte-doux">
+                        {objet.marche}
+                      </span>
+                    </div>
+                    <h2 className="font-titre text-sm leading-snug font-bold">
+                      {objet.titre}
+                    </h2>
+                    <p className="mt-auto text-[11px] text-texte-discret">
+                      {[objet.reference, objet.annee]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          {affiches.length > visibles.length && (
+            <button
+              type="button"
+              onClick={() => setLimite((n) => n + TAILLE_LOT)}
+              className="mx-auto mt-1 rounded-xl border border-champ bg-carte px-5 py-2.5 text-sm font-semibold text-texte hover:border-accent"
+            >
+              Afficher plus ({affiches.length - visibles.length} restant
+              {affiches.length - visibles.length > 1 ? "s" : ""})
+            </button>
+          )}
+        </>
       )}
     </div>
   );
