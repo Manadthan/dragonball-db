@@ -6,7 +6,7 @@ select plan(19);
 select has_table('dragonball', 'objets', 'table dragonball.objets');
 select has_table('dragonball', 'profils', 'table dragonball.profils');
 select has_table('dragonball', 'possessions', 'table dragonball.possessions');
-select is((select count(*)::int from dragonball.objets), 566, '566 objets (5 de départ + 103 DVD individuels + 204 livres Glénat + 229 Jump Comics Japon + 25 Jump Remix)');
+select is((select count(*)::int from dragonball.objets), 589, '589 objets (5 de départ + 103 DVD individuels + 204 livres Glénat + 252 Jump Comics Japon + 25 Jump Remix)');
 select is(
   (select count(*)::int from dragonball.objets where edition = 'DVD individuels' and editeur = 'Pony Canyon'),
   86,
@@ -24,8 +24,8 @@ select is(
 );
 select is(
   (select count(*)::int from dragonball.objets where categorie = 'manga-livre' and editeur = 'Shueisha (Jump Comics)' and marche = 'JAP'),
-  229,
-  '229 livres Dragon Ball publiés sous le label Jump Comics au Japon'
+  252,
+  '252 livres Dragon Ball publiés sous le label Jump Comics / Jump Comics Selection au Japon'
 );
 select is(
   (select count(*)::int from dragonball.objets where categorie = 'manga-livre' and editeur = 'Shueisha (Jump Remix)' and marche = 'JAP'),
@@ -84,7 +84,7 @@ select throws_ok(
 -- Un visiteur voit le catalogue public mais ne peut pas lire les possessions.
 set local role anon;
 set local request.jwt.claims = '{"role": "anon"}';
-select is((select count(*)::int from dragonball.objets), 567, 'un visiteur lit le catalogue public');
+select is((select count(*)::int from dragonball.objets), 590, 'un visiteur lit le catalogue public');
 select throws_ok(
   $$select * from dragonball.possessions$$,
   '42501', null, 'un visiteur n''a aucun accès à dragonball.possessions'

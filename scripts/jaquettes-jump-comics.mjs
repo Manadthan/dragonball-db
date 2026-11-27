@@ -78,10 +78,16 @@ function candidatsPourIsbn(isbn) {
   const propre = (isbn ?? "").replace(/[^0-9]/g, "");
   if (propre.length !== 13) return [];
   const i10 = isbn13Vers10(propre);
+  const entree = manifeste[propre];
+  const listeManifeste = Array.isArray(entree)
+    ? entree
+    : entree
+      ? [entree]
+      : [];
   return [
     ...new Set(
       [
-        manifeste[propre],
+        ...listeManifeste,
         `https://dosbg3xlm0x1t.cloudfront.net/images/items/${propre}/1200/${propre}.jpg`,
         `https://shop.r10s.jp/book/cabinet/${propre.slice(-4)}/${propre}.jpg`,
         `https://images-fe.ssl-images-amazon.com/images/P/${i10}.09._SCLZZZZZZZ_.jpg`,
