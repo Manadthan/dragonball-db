@@ -1,7 +1,8 @@
 name: Import des visuels du catalogue
 
 # Exécute séquentiellement tous les scripts idempotents d'import de visuels
-# (jaquettes DVD Pony Canyon / Toei Video, couvertures Glénat France, Jump Comics Japon et Shueisha Jump Remix)
+# (jaquettes DVD Pony Canyon / Toei Video, couvertures Glénat France, Jump Comics Japon,
+# Shueisha Jump Remix et guides & artbooks japonais)
 # dans un seul job après chaque déploiement de schéma sur main, afin d'éviter toute saturation
 # de Supabase Storage et toute annulation automatique entre workflows concurrents.
 on:
@@ -40,7 +41,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - name: Importer les visuels manquants (DVD, Glénat, Jump Comics, Jump Remix)
+      - name: Importer les visuels manquants (DVD, Glénat, Jump Comics, Jump Remix, Guides & Artbooks Japon)
         run: |
           ARGS="--ecrire"
           if [ "${{ inputs.forcer }}" = "true" ]; then
@@ -50,3 +51,4 @@ jobs:
           node scripts/jaquettes-glenat.mjs $ARGS
           node scripts/jaquettes-jump-comics.mjs $ARGS
           node scripts/jaquettes-jump-remix.mjs $ARGS
+          node scripts/jaquettes-guides-artbooks-japon.mjs $ARGS
