@@ -4,10 +4,6 @@ name: Import des jaquettes Pony Canyon
 # les convertit en WebP (300w + 680w) dans le bucket public `dragonball-visuels`,
 # et met à jour `dragonball.objets.image_path` (idempotent : ne traite que les manquantes par défaut).
 on:
-  workflow_run:
-    workflows: ["Déploiement du schéma"]
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
     inputs:
       forcer:
