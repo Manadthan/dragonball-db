@@ -62,6 +62,7 @@ export function calculerSuivi({
   const partiesTitre = [
     filtres.categorie ? libelleCategorie(filtres.categorie) : null,
     filtres.ere ? libelleEre(filtres.ere) : null,
+    filtres.edition,
     filtres.editeur,
     filtres.annee,
     filtres.marche ? libelleMarche(filtres.marche) : null,

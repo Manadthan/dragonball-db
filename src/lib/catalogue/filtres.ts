@@ -15,6 +15,7 @@ export type FiltresCatalogue = {
   ere: EreDb | null;
   marche: Marche | null;
   editeur: string | null;
+  edition: string | null;
   annee: string | null;
   q: string;
   collection: FiltreCollection | null;
@@ -25,6 +26,7 @@ export const SANS_FILTRE: FiltresCatalogue = {
   ere: null,
   marche: null,
   editeur: null,
+  edition: null,
   annee: null,
   q: "",
   collection: null,
@@ -57,6 +59,7 @@ export function filtresDepuisParametres(recherche: string): FiltresCatalogue {
     ere: ERES.find((e) => e.valeur === ere)?.valeur ?? null,
     marche: MARCHES.find((m) => m.valeur === marche)?.valeur ?? null,
     editeur: params.get("editeur")?.trim() || null,
+    edition: params.get("edition")?.trim() || null,
     annee: annee && /^\d{4}$/.test(annee) ? annee : null,
     q: params.get("q")?.trim() ?? "",
     collection: col === "possedes" || col === "manquants" ? col : null,
@@ -70,6 +73,7 @@ export function versParametres(filtres: FiltresCatalogue): string {
   if (filtres.ere) params.set("ere", filtres.ere);
   if (filtres.marche) params.set("marche", filtres.marche.toLowerCase());
   if (filtres.editeur) params.set("editeur", filtres.editeur);
+  if (filtres.edition) params.set("edition", filtres.edition);
   if (filtres.annee) params.set("annee", filtres.annee);
   if (filtres.q.trim()) params.set("q", filtres.q.trim());
   if (filtres.collection) params.set("collection", filtres.collection);
@@ -79,27 +83,40 @@ export function versParametres(filtres: FiltresCatalogue): string {
 
 export function texteRechercheObjet(objet: ObjetCatalogue): string {
   return normaliser(
-    [objet.titre, objet.titreOriginal, objet.editeur, objet.reference]
+    [
+      objet.titre,
+      objet.titreOriginal,
+      objet.editeur,
+      objet.edition,
+      objet.reference,
+      objet.details,
+    ]
       .filter(Boolean)
       .join(" "),
   );
 }
 
-/** Filtre le catalogue par catégorie, ère, marché, éditeur, année et recherche `?q=`. */
+/** Filtre le catalogue par catégorie, ère, marché, éditeur, édition, année et recherche `?q=`. */
 export function filtrerObjets(
   objets: readonly ObjetCatalogue[],
   filtres: FiltresCatalogue,
 ): ObjetCatalogue[] {
   const mots = motsRecherche(filtres.q);
   const editeurNormalise = filtres.editeur ? normaliser(filtres.editeur) : null;
+  const editionNormalisee = filtres.edition
+    ? normaliser(filtres.edition)
+    : null;
 
   return objets.filter((o) => {
     if (filtres.categorie && o.categorie !== filtres.categorie) return false;
     if (filtres.ere && o.ere !== filtres.ere) return false;
     if (filtres.marche && o.marche !== filtres.marche) return false;
+    if (editeurNormalise && normaliser(o.editeur ?? "") !== editeurNormalise) {
+      return false;
+    }
     if (
-      editeurNormalise &&
-      normaliser(o.editeur ?? "") !== editeurNormalise
+      editionNormalisee &&
+      normaliser(o.edition ?? "") !== editionNormalisee
     ) {
       return false;
     }
@@ -115,9 +132,15 @@ export function filtrerObjets(
 export function editeursProposes(objets: readonly ObjetCatalogue[]): string[] {
   return [
     ...new Set(
-      objets
-        .map((o) => o.editeur?.trim())
-        .filter((e): e is string => !!e),
+      objets.map((o) => o.editeur?.trim()).filter((e): e is string => !!e),
+    ),
+  ].sort((a, b) => a.localeCompare(b, "fr"));
+}
+
+export function editionsProposees(objets: readonly ObjetCatalogue[]): string[] {
+  return [
+    ...new Set(
+      objets.map((o) => o.edition?.trim()).filter((e): e is string => !!e),
     ),
   ].sort((a, b) => a.localeCompare(b, "fr"));
 }

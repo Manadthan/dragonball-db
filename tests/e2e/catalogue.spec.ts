@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("le catalogue affiche les 5 catégories et synchronise les filtres dans l'URL", async ({
+test("le catalogue affiche les catégories, l'édition, la fiche objet et /connexion", async ({
   page,
 }) => {
   await page.goto("/");
@@ -9,7 +9,20 @@ test("le catalogue affiche les 5 catégories et synchronise les filtres dans l'U
   ).toBeVisible();
   await expect(page.getByText("5 objets affichés sur 5")).toBeVisible();
 
-  await page.getByRole("button", { name: "Mangas", exact: true }).click();
-  await expect(page).toHaveURL("/?categorie=manga-livre");
+  await page.getByRole("button", { name: "Vidéo", exact: true }).click();
+  await expect(page).toHaveURL("/?categorie=video");
   await expect(page.getByText("1 objet affiché sur 5")).toBeVisible();
+
+  await page
+    .getByRole("link", { name: /Dragon Ball Z — Dragon Box Vol\. 1/i })
+    .click();
+  await expect(page).toHaveURL("/objets/dbz-dragon-box-dvd-jap");
+  await expect(page.getByText("19 mars 2003")).toBeVisible();
+  await expect(page.getByText("PCBC-50368")).toBeVisible();
+
+  await page.getByRole("link", { name: "Connexion", exact: true }).click();
+  await expect(page).toHaveURL("/connexion");
+  await expect(
+    page.getByRole("heading", { name: "Connexion", exact: true }),
+  ).toBeVisible();
 });

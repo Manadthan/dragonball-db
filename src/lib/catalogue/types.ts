@@ -40,8 +40,14 @@ export type ObjetCatalogue = {
   titre: string;
   titreOriginal: string | null;
   editeur: string | null;
+  edition: string | null;
+  numero: number | null;
   annee: number | null;
+  dateSortie: string | null;
   reference: string | null;
+  details: string | null;
+  lienOfficiel: string | null;
+  imagePath: string | null;
   imageUrl: string | null;
 };
 
@@ -53,3 +59,18 @@ export const libelleEre = (e: EreDb) =>
 
 export const libelleMarche = (m: Marche) =>
   MARCHES.find((x) => x.valeur === m)?.libelle ?? m;
+
+const FORMAT_DATE_FR = new Intl.DateTimeFormat("fr-FR", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+/** Formate une date ISO (`YYYY-MM-DD`) en français (`2 novembre 2005`). */
+export function formaterDateSortie(iso: string | null): string | null {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
+  const date = new Date(`${iso}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  return FORMAT_DATE_FR.format(date);
+}
