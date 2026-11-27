@@ -25,4 +25,7 @@ test("le catalogue affiche les catégories, l'édition, la fiche objet et /conne
   await expect(
     page.getByRole("heading", { name: "Connexion", exact: true }),
   ).toBeVisible();
+
+  await page.goto("/objets/nouveau");
+  await expect(page).toHaveURL("/connexion");
 });

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ActionsProprietaireObjet } from "@/components/ActionsProprietaireObjet";
 import { CaseObjet } from "@/components/CaseObjet";
 import { EnTete } from "@/components/EnTete";
 import { JaquetteObjet } from "@/components/JaquetteObjet";
@@ -92,6 +93,7 @@ export default async function PageObjet({
             </div>
 
             <CaseObjet objetId={objet.id} />
+            <ActionsProprietaireObjet slug={objet.slug} />
 
             {objet.lienOfficiel && (
               <a

@@ -53,7 +53,15 @@ export function EnTete() {
           </span>
           Dragon Ball DB
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {collection.proprietaire && (
+            <Link
+              href="/objets/nouveau"
+              className="flex h-9 items-center rounded-lg bg-accent px-2.5 text-xs font-semibold text-inverse"
+            >
+              + Ajouter
+            </Link>
+          )}
           <Link
             href="/connexion"
             className="flex h-9 items-center rounded-lg border border-bordure bg-surface px-2.5 text-xs font-semibold text-texte-doux hover:border-accent hover:text-texte"
