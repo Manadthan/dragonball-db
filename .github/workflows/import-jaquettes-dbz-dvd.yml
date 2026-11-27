@@ -16,7 +16,7 @@ on:
         default: false
 
 concurrency:
-  group: import-jaquettes-pony-canyon
+  group: dragonball-visuels-import
   cancel-in-progress: false
 
 permissions:

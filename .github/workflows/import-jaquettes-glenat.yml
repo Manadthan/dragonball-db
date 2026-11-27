@@ -16,7 +16,7 @@ on:
         default: false
 
 concurrency:
-  group: import-jaquettes-glenat
+  group: dragonball-visuels-import
   cancel-in-progress: false
 
 permissions:
