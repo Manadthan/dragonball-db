@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   baseVisuel,
@@ -71,5 +73,32 @@ describe("stockage des visuels dragonball-visuels", () => {
     expect(estJaquetteHdValide({ width: 674, height: 1000 })).toBe(true);
     expect(estJaquetteHdValide({ width: 210, height: 300 })).toBe(false);
     expect(estJaquetteHdValide({})).toBe(false);
+  });
+
+  it("vérifie que tous les scripts d'import publient au format {base}-{taille}.webp", () => {
+    const dossier = join(process.cwd(), "scripts");
+    const fichiers = readdirSync(dossier).filter((f) =>
+      /^jaquettes-.*\.mjs$/.test(f),
+    );
+    expect(fichiers.length).toBeGreaterThan(0);
+    for (const fichier of fichiers) {
+      const contenu = readFileSync(join(dossier, fichier), "utf8");
+      const uploads =
+        contenu.match(/(?:upload|televerserAvecReessais?)\([^;]+/g) ?? [];
+      expect(
+        uploads.length,
+        `${fichier} doit téléverser des visuels`,
+      ).toBeGreaterThan(0);
+      for (const appel of uploads) {
+        expect(
+          appel,
+          `${fichier} ne doit pas téléverser avec un suffixe *w.webp`,
+        ).not.toMatch(/w\.webp/);
+      }
+      expect(
+        contenu,
+        `${fichier} doit nommer ses fichiers {base}-{taille}.webp`,
+      ).toMatch(/\}-\$\{[^}]+\}\.webp/);
+    }
   });
 });
