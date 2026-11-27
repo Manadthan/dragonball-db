@@ -10,12 +10,14 @@ import { avecObjet, ensemblePossessions } from "./collection";
 
 export type EtatCollection = {
   connecte: boolean | null;
+  proprietaire: boolean;
   possessions: ReadonlySet<string>;
   erreur: string | null;
 };
 
 const INITIAL: EtatCollection = {
   connecte: null,
+  proprietaire: false,
   possessions: new Set(),
   erreur: null,
 };
@@ -35,23 +37,39 @@ async function charger() {
   try {
     const supabase = await clientSiSession();
     if (!supabase) {
-      changer({ connecte: false, possessions: new Set(), erreur: null });
+      changer({
+        connecte: false,
+        proprietaire: false,
+        possessions: new Set(),
+        erreur: null,
+      });
       return;
     }
     const { data } = await supabase.auth.getSession();
     if (!data.session) {
-      changer({ connecte: false, possessions: new Set(), erreur: null });
+      changer({
+        connecte: false,
+        proprietaire: false,
+        possessions: new Set(),
+        erreur: null,
+      });
       return;
     }
-    const { data: lignes, error } = await supabase
-      .from("possessions")
-      .select("objet_id");
+    const [{ data: lignes, error }, { data: estProp }] = await Promise.all([
+      supabase.from("possessions").select("objet_id"),
+      supabase.rpc("est_proprietaire"),
+    ]);
     if (error) {
-      changer({ connecte: true, erreur: "Collection illisible" });
+      changer({
+        connecte: true,
+        proprietaire: estProp === true,
+        erreur: "Collection illisible",
+      });
       return;
     }
     changer({
       connecte: true,
+      proprietaire: estProp === true,
       possessions: ensemblePossessions(lignes ?? []),
       erreur: null,
     });
@@ -62,7 +80,12 @@ async function charger() {
 
 export function rechargerCollection() {
   void charger().catch(() =>
-    changer({ connecte: false, possessions: new Set(), erreur: null }),
+    changer({
+      connecte: false,
+      proprietaire: false,
+      possessions: new Set(),
+      erreur: null,
+    }),
   );
 }
 
