@@ -150,21 +150,26 @@ async function televerserAvecReessai(supabase, chemin, webp) {
   throw new Error(`upload ${chemin} : ${dernierErreur.message}`);
 }
 
-async function convertirEtPublier(supabase, slug, octets) {
-  const cle = `${slug}-v1`;
+async function convertirEtPublier(supabase, slug, octets, version) {
+  const cle = `${slug}-${version}`;
   for (const largeur of TAILLES) {
     const webp = await sharp(octets)
       .resize({ width: largeur, withoutEnlargement: true })
       .webp({ quality: 84, effort: 5 })
       .toBuffer();
-    await televerserAvecReessai(supabase, `${cle}-${largeur}w.webp`, webp);
+    await televerserAvecReessai(supabase, `${cle}-${largeur}.webp`, webp);
   }
   const { error: errDb } = await supabase
     .schema("dragonball")
     .from("objets")
-    .update({ image_path: cle })
+    .update({ image_path: cle, updated_at: new Date().toISOString() })
     .eq("slug", slug);
   if (errDb) throw new Error(`maj objets.${slug} : ${errDb.message}`);
+  // Nettoyage best-effort des anciens fichiers publiés avec le mauvais suffixe (*w.webp).
+  await supabase.storage
+    .from(BUCKET)
+    .remove(TAILLES.map((largeur) => `${slug}-v1-${largeur}w.webp`))
+    .catch(() => null);
   return cle;
 }
 
@@ -196,12 +201,15 @@ async function main() {
   if (error) throw new Error(`lecture objets : ${error.message}`);
 
   const aTraiter = (objets ?? []).filter(
-    (o) => o.reference && (forcer || !o.image_path),
+    (o) =>
+      o.reference &&
+      (forcer || !o.image_path || o.image_path.endsWith("-v1")),
   );
   console.log(
     `Jump Remix Anime Comics : ${objets?.length ?? 0} livre(s) en base, ${aTraiter.length} couverture(s) à importer.`,
   );
 
+  const version = `v${Date.now().toString(36).slice(-5)}`;
   let ok = 0;
   let erreurs = 0;
   const file = [...aTraiter];
@@ -215,7 +223,12 @@ async function main() {
           item.reference,
           item.slug,
         );
-        const cle = await convertirEtPublier(supabase, item.slug, octets);
+        const cle = await convertirEtPublier(
+          supabase,
+          item.slug,
+          octets,
+          version,
+        );
         ok++;
         console.log(`  ✓ ${item.slug} (${width}×${height}) → ${cle}`);
       } catch (e) {
