@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { JaquetteObjet } from "@/components/JaquetteObjet";
 import {
   anneesProposees,
@@ -14,6 +14,11 @@ import {
   type FiltresCatalogue,
 } from "@/lib/catalogue/filtres";
 import {
+  OPTIONS_TRI,
+  trierObjets,
+  type TriCatalogue,
+} from "@/lib/catalogue/tri";
+import {
   CATEGORIES,
   ERES,
   libelleEre,
@@ -23,24 +28,45 @@ import {
 import { filtrerCollection, possedeObjet } from "@/lib/collection/collection";
 import { useCollection } from "@/lib/collection/navigateur";
 
-function lireFiltresNavigateur(): FiltresCatalogue {
-  if (typeof window === "undefined") return SANS_FILTRE;
-  return filtresDepuisParametres(window.location.search);
+const abonnesUrl = new Set<() => void>();
+
+function abonnerUrl(rappel: () => void) {
+  abonnesUrl.add(rappel);
+  window.addEventListener("popstate", rappel);
+  return () => {
+    abonnesUrl.delete(rappel);
+    window.removeEventListener("popstate", rappel);
+  };
+}
+
+function lireUrl(): string {
+  return window.location.search;
 }
 
 const TAILLE_LOT = 48;
 
 export function Catalogue({ objets }: { objets: ObjetCatalogue[] }) {
-  const [filtres, setFiltres] = useState<FiltresCatalogue>(() =>
-    lireFiltresNavigateur(),
+  const rechercheUrl = useSyncExternalStore(abonnerUrl, lireUrl, () => "");
+  const filtresUrl = useMemo(
+    () => filtresDepuisParametres(rechercheUrl),
+    [rechercheUrl],
   );
+  const [saisieQ, setSaisieQ] = useState<string | null>(null);
+  const filtres = useMemo<FiltresCatalogue>(
+    () =>
+      saisieQ !== null && saisieQ.trim() === filtresUrl.q
+        ? { ...filtresUrl, q: saisieQ }
+        : filtresUrl,
+    [filtresUrl, saisieQ],
+  );
+
   const [limite, setLimite] = useState(TAILLE_LOT);
   const collection = useCollection();
   const connecte = collection.connecte === true;
 
   function appliquer(patch: Partial<FiltresCatalogue>) {
     const suivants: FiltresCatalogue = { ...filtres, ...patch };
-    setFiltres(suivants);
+    setSaisieQ("q" in patch ? suivants.q : null);
     setLimite(TAILLE_LOT);
     if (typeof window !== "undefined") {
       const qs = versParametres(suivants);
@@ -49,6 +75,7 @@ export function Catalogue({ objets }: { objets: ObjetCatalogue[] }) {
         "",
         `${window.location.pathname}${qs}`,
       );
+      for (const rappel of abonnesUrl) rappel();
     }
   }
 
@@ -61,13 +88,7 @@ export function Catalogue({ objets }: { objets: ObjetCatalogue[] }) {
     const liste = connecte
       ? filtrerCollection(base, filtres.collection, collection.possessions)
       : base;
-    if (!filtres.edition) return liste;
-    return [...liste].sort(
-      (a, b) =>
-        (a.numero ?? Number.MAX_SAFE_INTEGER) -
-          (b.numero ?? Number.MAX_SAFE_INTEGER) ||
-        a.titre.localeCompare(b.titre, "fr"),
-    );
+    return trierObjets(liste, filtres.tri);
   }, [objets, filtres, connecte, collection.possessions]);
 
   const visibles = useMemo(() => affiches.slice(0, limite), [affiches, limite]);
@@ -239,21 +260,46 @@ export function Catalogue({ objets }: { objets: ObjetCatalogue[] }) {
         )}
       </div>
 
-      {/* Compteur + réinitialisation */}
-      <div className="flex items-center justify-between text-xs text-texte-discret">
-        <span>
-          {affiches.length} objet{affiches.length > 1 ? "s" : ""} affiché
-          {affiches.length > 1 ? "s" : ""} sur {objets.length}
-        </span>
-        {aFiltresActifs && (
-          <button
-            type="button"
-            onClick={() => appliquer(SANS_FILTRE)}
-            className="font-semibold text-accent"
+      {/* Tri + compteur + réinitialisation */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div className="flex items-center gap-2">
+          <label
+            htmlFor="tri-catalogue"
+            className="text-xs font-medium text-texte-doux"
           >
-            Tout effacer
-          </button>
-        )}
+            Tri
+          </label>
+          <select
+            id="tri-catalogue"
+            value={filtres.tri}
+            onChange={(e) =>
+              appliquer({ tri: e.currentTarget.value as TriCatalogue })
+            }
+            className="h-10 rounded-lg border border-champ bg-carte px-2.5 text-xs font-medium text-texte"
+          >
+            {OPTIONS_TRI.map((opt) => (
+              <option key={opt.valeur} value={opt.valeur}>
+                {opt.libelle}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center gap-3 text-xs text-texte-discret">
+          <span>
+            {affiches.length} objet{affiches.length > 1 ? "s" : ""} affiché
+            {affiches.length > 1 ? "s" : ""} sur {objets.length}
+          </span>
+          {aFiltresActifs && (
+            <button
+              type="button"
+              onClick={() => appliquer({ ...SANS_FILTRE, tri: filtres.tri })}
+              className="font-semibold text-accent"
+            >
+              Tout effacer
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Grille mobile-first (2 colonnes sur iPhone 12 mini) */}

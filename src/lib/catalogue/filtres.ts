@@ -1,3 +1,4 @@
+import { estTriCatalogue, TRI_PAR_DEFAUT, type TriCatalogue } from "./tri";
 import {
   CATEGORIES,
   ERES,
@@ -19,6 +20,7 @@ export type FiltresCatalogue = {
   annee: string | null;
   q: string;
   collection: FiltreCollection | null;
+  tri: TriCatalogue;
 };
 
 export const SANS_FILTRE: FiltresCatalogue = {
@@ -30,6 +32,7 @@ export const SANS_FILTRE: FiltresCatalogue = {
   annee: null,
   q: "",
   collection: null,
+  tri: TRI_PAR_DEFAUT,
 };
 
 /** Normalisation sans accents et en minuscules pour la recherche instantanée. */
@@ -53,6 +56,7 @@ export function filtresDepuisParametres(recherche: string): FiltresCatalogue {
   const marche = params.get("marche")?.toUpperCase();
   const annee = params.get("annee");
   const col = params.get("collection");
+  const triBrut = params.get("tri");
 
   return {
     categorie: CATEGORIES.find((c) => c.valeur === cat)?.valeur ?? null,
@@ -63,6 +67,7 @@ export function filtresDepuisParametres(recherche: string): FiltresCatalogue {
     annee: annee && /^\d{4}$/.test(annee) ? annee : null,
     q: params.get("q")?.trim() ?? "",
     collection: col === "possedes" || col === "manquants" ? col : null,
+    tri: estTriCatalogue(triBrut) ? triBrut : TRI_PAR_DEFAUT,
   };
 }
 
@@ -77,6 +82,7 @@ export function versParametres(filtres: FiltresCatalogue): string {
   if (filtres.annee) params.set("annee", filtres.annee);
   if (filtres.q.trim()) params.set("q", filtres.q.trim());
   if (filtres.collection) params.set("collection", filtres.collection);
+  if (filtres.tri !== TRI_PAR_DEFAUT) params.set("tri", filtres.tri);
   const texte = params.toString();
   return texte ? `?${texte}` : "";
 }

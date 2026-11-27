@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
+import { BoutonHaut } from "@/components/BoutonHaut";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -35,7 +36,10 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: SCRIPT_THEME }} />
       </head>
-      <body className="min-h-dvh font-sans antialiased">{children}</body>
+      <body className="min-h-dvh font-sans antialiased">
+        {children}
+        <BoutonHaut />
+      </body>
     </html>
   );
 }

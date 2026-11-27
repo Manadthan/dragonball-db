@@ -4,6 +4,7 @@ import { toutesLesPages } from "@/lib/supabase/pages";
 import { createSupabasePublicClient } from "@/lib/supabase/public";
 import { resoudreImageObjet } from "@/lib/visuels/stockage";
 import type { Database } from "@/types/database";
+import { TRI_PAR_DEFAUT, trierObjets } from "./tri";
 import type { ObjetCatalogue } from "./types";
 
 type LigneObjet = Database["dragonball"]["Tables"]["objets"]["Row"];
@@ -132,24 +133,11 @@ function versObjet(l: LigneObjet): ObjetCatalogue {
   };
 }
 
-function trierCatalogue(a: ObjetCatalogue, b: ObjetCatalogue): number {
-  const anA = a.annee ?? Number.MAX_SAFE_INTEGER;
-  const anB = b.annee ?? Number.MAX_SAFE_INTEGER;
-  if (anA !== anB) return anA - anB;
-
-  const numA = a.numero ?? Number.MAX_SAFE_INTEGER;
-  const numB = b.numero ?? Number.MAX_SAFE_INTEGER;
-  if (numA !== numB) return numA - numB;
-
-  const parTitre = a.titre.localeCompare(b.titre, "fr");
-  if (parTitre !== 0) return parTitre;
-  return a.id.localeCompare(b.id);
-}
-
 export async function chargerCatalogue(): Promise<ObjetCatalogue[]> {
-  if (!supabaseEnvOptionnel()) return OBJETS_DEPART;
+  if (!supabaseEnvOptionnel())
+    return trierObjets(OBJETS_DEPART, TRI_PAR_DEFAUT);
   const supabase = createSupabasePublicClient();
-  // Tri SQL sur colonnes du socle 0001 + tri naturel sur `numero` côté TS :
+  // Tri SQL sur colonnes du socle 0001 + tri naturel côté TS :
   // permet aux aperçus Vercel de builder avant l'application de la migration 0003 en prod.
   const lignes = await toutesLesPages<LigneObjet>(
     (de, a) =>
@@ -162,7 +150,7 @@ export async function chargerCatalogue(): Promise<ObjetCatalogue[]> {
         .range(de, a),
     "Catalogue Dragon Ball",
   );
-  return lignes.map(versObjet).sort(trierCatalogue);
+  return trierObjets(lignes.map(versObjet), TRI_PAR_DEFAUT);
 }
 
 export async function chargerObjetParSlug(
